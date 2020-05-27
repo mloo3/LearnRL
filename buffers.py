@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 class ReplayBuffer:
     def __init__(self, size=100):
@@ -13,7 +14,7 @@ class ReplayBuffer:
         else:
             self.buffer[self.next_idx] = experience
         self.next_idx = (self.next_idx + 1) % self.size
-    def sample(self, batch_size):
+    def sample(self, batch_size, device):
         batch_ixs = np.random.randint(0,len(self.buffer) - 1, size=batch_size)
 
         o,a,r,o_p = self.buffer[0]
@@ -29,10 +30,15 @@ class ReplayBuffer:
             new_obs_batch.append(self.buffer[ix][3])
 
         # may want to switch this to tensors later on
-        obs_batch = np.array(obs_batch)
-        actions_batch = np.array(actions_batch)
-        rewards_batch = np.array(rewards_batch)
-        new_obs_batch = np.array(new_obs_batch)
+        obs_batch = torch.Tensor(obs_batch).to(device)
+
+        actions_batch = torch.Tensor(actions_batch).long().to(device)
+        actions_batch = torch.reshape(actions_batch, (actions_batch.shape[0], 1))
+
+        rewards_batch = torch.Tensor(rewards_batch).to(device)
+        rewards_batch = torch.reshape(rewards_batch, (rewards_batch.shape[0], 1))
+
+        new_obs_batch = torch.Tensor(new_obs_batch).to(device)
 
         return obs_batch, actions_batch, rewards_batch, new_obs_batch
 
@@ -42,7 +48,8 @@ if __name__ == "__main__":
     test = ReplayBuffer(10)
     for i in range(50):
         test.add(i,i,i,i)
-    a = test.sample(5)
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    a = test.sample(5,device)
     print(a)
 
 
